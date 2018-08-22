@@ -20,22 +20,44 @@ namespace Timelines
     /// </summary>
     public partial class TimelineControl : UserControl
     {
-        public Timeline Timeline { get; set; }
+        public event EventHandler TimeLineEventsChanged;
 
-        public TimelineControl()
+        private List<Grid> EventMarks;
+
+        protected virtual void OnTimeLineEventsChanged(EventArgs e)
         {
-            InitializeComponent();
+            EventHandler handler = TimeLineEventsChanged;
+            if (handler != null)
+            {
+                handler(this, e);
+            }
         }
 
-        public void Update(Timeline tl)
+        public Timeline Timeline { get; set; }
+
+        public bool Visible { get; set; }
+
+        public TimelineControl(Timeline tl)
         {
+            InitializeComponent();
             Timeline = tl;
+            EventMarks = new List<Grid>();
+            Visible = true;
+        }
+
+        public void Update()
+        {
+            foreach (var ctl in EventMarks)
+            {
+                mainGrid.Children.Remove(ctl);
+            }
+            
 
             DateTime now = DateTime.Now;
 
-            lblTimelineName.Content = tl.Name;
+            lblTimelineName.Content = Timeline.Name;
 
-            foreach (TimelineEvent evt in tl.Events)
+            foreach (TimelineEvent evt in Timeline.Events)
             {
                 if (evt.Date > now && evt.Date <= now.AddMonths(1))
                 {
@@ -60,24 +82,61 @@ namespace Timelines
                             break;
                     }
 
+                    TextBlock lbl1 = new TextBlock();
+                    lbl1.FontSize = 12;
+                    lbl1.TextTrimming = TextTrimming.CharacterEllipsis;
+                    lbl1.Text = string.Concat(evt.Date.ToString("MMM").Substring(0, 3), " ", evt.Date.ToString("dd"));
+                    lbl1.Width = 40;
+                    //lbl.Margin = new Thickness(x, 135, 0, 0);
+                    lbl1.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+                    lbl1.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+
                     Rectangle rect = new Rectangle();
-                    rect.Margin = new Thickness(x, 95, 0, 95);
+                    //rect.Margin = new Thickness(x, 95, 0, 95);
                     rect.Fill = new SolidColorBrush() { Color = col };
                     rect.Width = 5;
                     rect.Height = 40;
-                    rect.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
-                    rect.VerticalAlignment = System.Windows.VerticalAlignment.Top;
+                    rect.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+                    rect.VerticalAlignment = System.Windows.VerticalAlignment.Center;
+                 
+                    TextBlock lbl2 = new TextBlock();
+                    lbl2.FontSize = 10;
+                    lbl2.TextTrimming = TextTrimming.CharacterEllipsis;
+                    lbl2.Text = evt.ShortName;
+                    lbl2.Width = 40;
+                    //lbl.Margin = new Thickness(x, 135, 0, 0);
+                    lbl2.HorizontalAlignment = System.Windows.HorizontalAlignment.Center;
+                    lbl2.VerticalAlignment = System.Windows.VerticalAlignment.Center;
 
-                    Label lbl = new Label();
-                    lbl.Content = evt.ShortName;
+                    Grid grd = new Grid();
+                    grd.RowDefinitions.Add(new RowDefinition());
+                    grd.RowDefinitions.Add(new RowDefinition());
+                    grd.RowDefinitions.Add(new RowDefinition());
+                    grd.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
+                    grd.VerticalAlignment = System.Windows.VerticalAlignment.Top;
+                    grd.Margin = new Thickness(x - lbl2.Width / 2, 60, 0, 0);
 
-                    lbl.Margin = new Thickness(x, 135, 0, 0);
-                    lbl.HorizontalAlignment = System.Windows.HorizontalAlignment.Left;
-                    lbl.VerticalAlignment = System.Windows.VerticalAlignment.Top;
+                    grd.Width = 40;
+                    grd.Height = 80;
+                    //grd.Background = new SolidColorBrush() { Color = Colors.Green };
+                    grd.Children.Add(lbl1);
+                    grd.Children.Add(rect);
+                    grd.Children.Add(lbl2);
+                    Grid.SetRow(lbl1, 0);
+                    Grid.SetRow(rect, 1);
+                    Grid.SetRow(lbl2, 2);
 
+                    //todo move in event class
+                    string evttooltip = string.Format("{1}{0}{2}{0}{3}", Environment.NewLine,
+                                                                evt.ShortName,
+                                                                evt.Date.ToShortDateString(),
+                                                                evt.Description);
 
-                    mainGrid.Children.Add(lbl);
-                    mainGrid.Children.Add(rect);
+                    ToolTip tooltip = new ToolTip { Content = evttooltip };
+                    grd.ToolTip = tooltip;
+
+                    mainGrid.Children.Add(grd);
+                    EventMarks.Add(grd);
                 }
             }
 
@@ -90,7 +149,16 @@ namespace Timelines
                 AddEventWindow wd = new AddEventWindow(Timeline);
                 wd.ShowDialog();
 
+                OnTimeLineEventsChanged(new EventArgs());
             }
+        }
+
+        private void btnVisible_Click(object sender, RoutedEventArgs e)
+        {
+            Visible = !Visible;
+            Opacity = Visible ? 1 : .5;
+
+            OnTimeLineEventsChanged(new EventArgs());
         }
     }
 }

@@ -11,6 +11,7 @@
                 Click="btnEvents_Click"/>
         <Button Content="Del" HorizontalAlignment="Right" Margin="10" VerticalAlignment="Bottom" Width="40"/>
         <Rectangle Name="bar" Fill="black" HorizontalAlignment="Left" Margin="10,95,10,95" Stroke="Black" Height="10" Width="620" RadiusY="0.5" RadiusX="0.5"/>
+        <Button Name="btnVisible" Content="Visible" HorizontalAlignment="Left" Margin="10" VerticalAlignment="Bottom" Width="40" Click="btnVisible_Click"/>
 
     </Grid>
 </UserControl>

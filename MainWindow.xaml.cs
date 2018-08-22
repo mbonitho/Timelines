@@ -22,6 +22,8 @@ namespace Timelines
     public partial class MainWindow : Window
     {
         public List<Timeline> Timelines { get; set; }
+        public List<TimelineControl> TimelineControls { get; set; }
+        TimelineControl MasterTLC { get; set; }
 
         public MainWindow()
         {
@@ -31,16 +33,34 @@ namespace Timelines
 
             Timelines = LoadTimelines();
 
-            TimelineControl masterTLC = new TimelineControl();
-            masterTLC.Update(masterTL);
-            timelinesPanel.Children.Add(masterTLC);
+            MasterTLC = new TimelineControl(masterTL);
+            MasterTLC.btnVisible.Visibility = System.Windows.Visibility.Hidden;
+            MasterTLC.btnEvents.Visibility = System.Windows.Visibility.Hidden;
+            //MasterTLC.btnDelete.Visibility = System.Windows.Visibility.Hidden;
+            MasterTLC.Update();
+            timelinesPanel.Children.Add(MasterTLC);
 
+            bool even = true;
+            TimelineControls = new List<TimelineControl>();
             foreach (Timeline tl in Timelines)
             {
-                TimelineControl tlc = new TimelineControl();
-                tlc.Update(tl);
+                TimelineControl tlc = new TimelineControl(tl);
+                tlc.Update();
                 timelinesPanel.Children.Add(tlc);
+                tlc.TimeLineEventsChanged += tlc_TimeLineEventsChanged;
+                TimelineControls.Add(tlc);
+
+                tlc.Background = even ? new SolidColorBrush() { Color = Colors.Gray } : new SolidColorBrush() { Color = Colors.LightGray };
+
+                even = !even;
             }
+
+            UpdateMasterTimeLine();
+        }
+
+        private void tlc_TimeLineEventsChanged(object sender, EventArgs e)
+        {
+            UpdateMasterTimeLine();
         }
 
 
@@ -67,6 +87,21 @@ namespace Timelines
             result.Add(devTL);
 
             return result;
+        }
+
+        public void UpdateMasterTimeLine()
+        {
+            DateTime now = DateTime.Now;
+            MasterTLC.Timeline.Events.Clear();
+
+            foreach (TimelineControl tlc in TimelineControls.Where((x) => x.Visible))
+            {
+                var events = tlc.Timeline.Events.Where((evt) => evt.Date > now && evt.Date <= now.AddMonths(1));
+
+                MasterTLC.Timeline.Events.AddRange(events);
+            }
+
+            MasterTLC.Update();
         }
     }
 }
